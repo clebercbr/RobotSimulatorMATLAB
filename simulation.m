@@ -5,27 +5,32 @@ function [] = simulation()
  
     room = createWorkspace(800,600);
     assignin('base','room',room);
- 
+    
     roomWithoutBot = room;
- 
+    
     configSimulation();
  
     dir = 1;
+    assignin('base','dir',dir);
+    botNewX = bot.x;
+    botNewY = bot.y;
+    assignin('base','botNewX',botNewX);
+    assignin('base','botNewY',botNewY);
     while 1
-        botNewX = bot.x;%+dir;
-        botNewY = bot.y;
-        retMove = moveRobot(room,roomWithoutBot,bot,botNewX,botNewY); 
+        botNewX = botNewX;%+dir;
+        botNewY = botNewY+dir;
+        [room,retMove] = moveRobot(room,roomWithoutBot,bot,botNewX,botNewY); 
         if retMove == 0
             imagesc(room.area)
             pbaspect([room.width room.height 1]);
             drawnow;
-            pause(0.02);
+            pause(0.001);
         else
             dir = -dir;
             imagesc(room.area)
             pbaspect([room.width room.height 1]);
             drawnow;
-            pause(0.02);
+            pause(0.001);
         end
     end
 end
@@ -76,28 +81,41 @@ function robot = createRobot(width, height)
     robot.y = 1;
 end
  
-function ret = moveRobot(room,roomWithoutBot,bot,newX,newY)
-    sumRoom = sum(sum(room.area));    
+function [room,ret] = moveRobot(room,roomWithoutBot,bot,newX,newY)
+    sumRoomWithoutBot = sum(sum(roomWithoutBot.area));
+    %assignin('base','sumRoomWithoutBot',sumRoomWithoutBot);
+    sumRoom = sum(sum(room.area));
     assignin('base','sumRoom',sumRoom);
-    backupRoom = room; %Current room has a robot inside
-    
-    room = roomWithoutBot; %Clean the room to draw the robot in a new position
-    
-    bot.x = newX;
-    bot.y = newY;
-    assignin('base','bot',bot);
-    room.area(bot.y:bot.y+bot.height-1,bot.x:bot.x+bot.width-1) = bot.object;
-    %room.area(1:35,1:35) = bot.object;
-    
-    newSumRoom = sum(sum(room.area));
-    assignin('base','newSumRoom',newSumRoom);
-    
-    if  sumRoom == newSumRoom
-        ret = 0 %Success
-    else
-        room = backupRoom; %Undo movement
-        ret = 1 %Error
+    if sumRoomWithoutBot == sumRoom
+        disp('First Movement');
+        %Place robot in its first position
+        room.area(bot.y:bot.y+bot.height-1,bot.x:bot.x+bot.width-1) = bot.object;
     end
+    
+    if (newX >= 1) && (newY >= 1) && (newX <= room.width-bot.width) && (newY <= room.height-bot.height)
+        backupRoom = room; %Current room has a robot inside
+        room = roomWithoutBot; %Clean the room to draw the robot in a new position
+        bot.x = newX;
+        bot.y = newY;
+        assignin('base','bot',bot);
+        room.area(bot.y:bot.y+bot.height-1,bot.x:bot.x+bot.width-1) = bot.object;
+        sumRoom = sum(sum(room.area));
+        %room.area(1:35,1:35) = bot.object;
+    
+        newSumRoom = sum(sum(room.area));
+        assignin('base','newSumRoom',newSumRoom);
+        disp(sumRoom);
+        disp(newSumRoom);
+        if sumRoom == newSumRoom
+            ret = 0 %Success
+        else
+            room = backupRoom; %Undo movement
+            ret = 1 %Colision
+        end
+    else
+        ret = 2 %Out of bounds
+    end
+    
 end
  
 function [] = configSimulation()
