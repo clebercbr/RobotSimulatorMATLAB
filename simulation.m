@@ -10,21 +10,22 @@ function [] = simulation()
  
     configSimulation();
  
- 
     dir = 1;
     while 1
-        room_backup = room;
-        botNewX = bot.x+dir;
+        botNewX = bot.x;%+dir;
         botNewY = bot.y;
-        retMove = moveRobot(room,bot,botNewX,botNewY); 
+        retMove = moveRobot(room,roomWithoutBot,bot,botNewX,botNewY); 
         if retMove == 0
             imagesc(room.area)
             pbaspect([room.width room.height 1]);
             drawnow;
             pause(0.02);
         else
-            room = room_backup;
             dir = -dir;
+            imagesc(room.area)
+            pbaspect([room.width room.height 1]);
+            drawnow;
+            pause(0.02);
         end
     end
 end
@@ -40,13 +41,13 @@ function room = createWorkspace(width, height)
     i = 1;
     while i <= 10
         desktop(i).object = zeros(60,120)+1;
-        [y,x] = size(desktop(i).object);
-        candidateX = randi(room.width-x);
-        candidateY = randi(room.height-y);
+        [h,w] = size(desktop(i).object);
+        candidateX = randi(room.width-w);
+        candidateY = randi(room.height-h);
         if candidateX > doorW || candidateY > doorH
             desktop(i).x = candidateX;
             desktop(i).y = candidateY;
-            room.area(desktop(i).y:desktop(i).y+y-1,desktop(i).x:desktop(i).x+x-1) = desktop(i).object;
+            room.area(desktop(i).y:desktop(i).y+h-1,desktop(i).x:desktop(i).x+w-1) = desktop(i).object;
             i = i + 1;
         end
     end
@@ -55,13 +56,11 @@ function room = createWorkspace(width, height)
     i = 1;
     while i <= 20
         chair(i).object = zeros(45,45)+1;
-        [y,x] = size(chair(i).object);
-        candidateX = randi(room.width-x);
-        candidateY = randi(room.height-y);
+        [chair(i).height, chair(i).width] = size(chair(i).object);
+        candidateX = randi(room.width-chair(i).width);
+        candidateY = randi(room.height-chair(i).height);
         if candidateX > doorW || candidateY > doorH
-            chair(i).x = candidateX;
-            chair(i).y = candidateY;
-            room.area(chair(i).y:chair(i).y+y-1,chair(i).x:chair(i).x+x-1) = chair(i).object;
+            room.area(candidateY:candidateY+chair(i).height-1,candidateX:candidateX+chair(i).width-1) = chair(i).object;
             i = i + 1;
         end
     end
@@ -70,27 +69,34 @@ end
  
 function robot = createRobot(width, height)
     robot.object = zeros(width,height)+1;
-    robot.width = 35;
-    robot.height = 35;
+    robot.width = width;
+    robot.height = height;
     %By defalut it initiates in position (1,1) of workspace
     robot.x = 1; 
     robot.y = 1;
 end
  
-function ret = moveRobot(room,bot,newX,newY)
+function ret = moveRobot(room,roomWithoutBot,bot,newX,newY)
     sumRoom = sum(sum(room.area));    
- 
+    assignin('base','sumRoom',sumRoom);
+    backupRoom = room; %Current room has a robot inside
+    
+    room = roomWithoutBot; %Clean the room to draw the robot in a new position
+    
     bot.x = newX;
     bot.y = newY;
-    [y,x] = size(bot.object);
-    room.area(bot.y:bot.y+y-1,bot.x:bot.x+x-1) = bot.object;
+    assignin('base','bot',bot);
+    room.area(bot.y:bot.y+bot.height-1,bot.x:bot.x+bot.width-1) = bot.object;
+    %room.area(1:35,1:35) = bot.object;
+    
     newSumRoom = sum(sum(room.area));
- 
+    assignin('base','newSumRoom',newSumRoom);
+    
     if  sumRoom == newSumRoom
-        ret = 0; %Success
+        ret = 0 %Success
     else
-        room = room_backup;
-        ret = 1; %Error
+        room = backupRoom; %Undo movement
+        ret = 1 %Error
     end
 end
  
