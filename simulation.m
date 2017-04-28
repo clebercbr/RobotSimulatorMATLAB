@@ -1,9 +1,10 @@
 function [] = simulation()
- 
-    bot = createRobot(35,35);
+
+    Tsimu = 0.001; %Simulation Period
+    bot = createRobot(40,40);
     assignin('base','bot',bot);
  
-    room = createWorkspace(800,600);
+    room = createWorkspace(500,400);
     assignin('base','room',room);
     
     roomWithoutBot = room;
@@ -14,8 +15,6 @@ function [] = simulation()
     assignin('base','dir',dir);
     botNewX = bot.x;
     botNewY = bot.y;
-    assignin('base','botNewX',botNewX);
-    assignin('base','botNewY',botNewY);
     while 1
         botNewX = botNewX;%+dir;
         botNewY = botNewY+dir;
@@ -24,13 +23,13 @@ function [] = simulation()
             imagesc(room.area)
             pbaspect([room.width room.height 1]);
             drawnow;
-            pause(0.001);
+            pause(Tsimu);
         else
             dir = -dir;
             imagesc(room.area)
             pbaspect([room.width room.height 1]);
             drawnow;
-            pause(0.001);
+            pause(Tsimu);
         end
     end
 end
@@ -60,7 +59,7 @@ function room = createWorkspace(width, height)
     %Create chairs
     i = 1;
     while i <= 20
-        chair(i).object = zeros(45,45)+1;
+        chair(i).object = zeros(50,50)+1;
         [chair(i).height, chair(i).width] = size(chair(i).object);
         candidateX = randi(room.width-chair(i).width);
         candidateY = randi(room.height-chair(i).height);
@@ -73,7 +72,16 @@ function room = createWorkspace(width, height)
 end
  
 function robot = createRobot(width, height)
-    robot.object = zeros(width,height)+1;
+    robot.object = zeros(width,height);
+    for i = -width/2:width/2
+        for j = -height/2:height/2
+	    [theta,rho] = cart2pol(i/((width/2)-1),j/((height/2)-1));
+            if (rho <= 1) 
+		robot.object(i+width/2,j+height/2) = 1;
+	    end
+        end
+    end
+
     robot.width = width;
     robot.height = height;
     %By defalut it initiates in position (1,1) of workspace
@@ -83,9 +91,7 @@ end
  
 function [room,ret] = moveRobot(room,roomWithoutBot,bot,newX,newY)
     sumRoomWithoutBot = sum(sum(roomWithoutBot.area));
-    %assignin('base','sumRoomWithoutBot',sumRoomWithoutBot);
     sumRoom = sum(sum(room.area));
-    assignin('base','sumRoom',sumRoom);
     if sumRoomWithoutBot == sumRoom
         disp('First Movement');
         %Place robot in its first position
@@ -99,11 +105,8 @@ function [room,ret] = moveRobot(room,roomWithoutBot,bot,newX,newY)
         bot.y = newY;
         assignin('base','bot',bot);
         room.area(bot.y:bot.y+bot.height-1,bot.x:bot.x+bot.width-1) = bot.object;
-        sumRoom = sum(sum(room.area));
-        %room.area(1:35,1:35) = bot.object;
     
         newSumRoom = sum(sum(room.area));
-        assignin('base','newSumRoom',newSumRoom);
         disp(sumRoom);
         disp(newSumRoom);
         if sumRoom == newSumRoom
