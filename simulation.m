@@ -1,36 +1,51 @@
 function [] = simulation()
 
     Tsimu = 0.001; %Simulation Period
-    bot = createRobot(40,40);
+    bot = createRobot(32,32);
     assignin('base','bot',bot);
  
     room = createWorkspace(500,400);
     assignin('base','room',room);
     
     roomWithoutBot = room;
-    
-    configSimulation();
+	heatmap = roomWithoutBot.area .- roomWithoutBot.area;
+
+    configSimulation(room);
  
-    dir = 1;
+    [dirX, dirY] = pol2cart(bot.theta,bot.rho);
     assignin('base','dir',dir);
     botNewX = bot.x;
     botNewY = bot.y;
+	counter = 0;
+
     while 1
-        botNewX = botNewX;%+dir;
-        botNewY = botNewY+dir;
+		counter = counter + 1;
+
+        botNewX = botNewX+dirX;
+        botNewY = botNewY+dirY;
         [room,retMove] = moveRobot(room,roomWithoutBot,bot,botNewX,botNewY); 
+
         if retMove == 0
+			heatmap = heatmap .+ room.area .- roomWithoutBot.area;
+		    assignin('base','heatmap',heatmap);
             imagesc(room.area)
-            pbaspect([room.width room.height 1]);
-            drawnow;
             pause(Tsimu);
         else
-            dir = -dir;
-            imagesc(room.area)
-            pbaspect([room.width room.height 1]);
-            drawnow;
-            pause(Tsimu);
+			%[dirX,dirY] = changeMovement(bot);
+			bot.theta = bot.theta + pi/randi(2:6);
+		    [dirX, dirY] = pol2cart(bot.theta,bot.rho);
+			dirX = int16(dirX);
+			dirY = int16(dirY);
+			counter = 0;
         end
+		if counter >= 50
+			%[dirX,dirY] = changeMovement(bot);
+			bot.theta = bot.theta + pi/randi(2:6);
+		    [dirX, dirY] = pol2cart(bot.theta,bot.rho);
+			dirX = int16(dirX);
+			dirY = int16(dirY);
+			counter = 0;
+		end
     end
 end
  
@@ -39,9 +54,26 @@ function room = createWorkspace(width, height)
     room.width = width;
     room.height = height;
     room.area = zeros(room.height,room.width);
-    %Create desktops
+    %Stabilish a door - furnitures must be created out of this area 
     doorW = 100;
     doorH = 100;
+    %Create chairs
+    i = 1;
+    while i <= 20
+        chair(i).object = zeros(44,44)+1;
+		%chair(i).object(1:4,1:4) = 1;
+		%chair(i).object(end-4:end,1:4) = 1;
+		%chair(i).object(1:4,end-4:end) = 1;
+		%chair(i).object(end-4:end,end-4:end) = 1;
+        [chair(i).height, chair(i).width] = size(chair(i).object);
+        candidateX = randi(room.width-chair(i).width);
+        candidateY = randi(room.height-chair(i).height);
+        if candidateX > doorW || candidateY > doorH
+            room.area(candidateY:candidateY+chair(i).height-1,candidateX:candidateX+chair(i).width-1) = chair(i).object;
+            i = i + 1;
+        end
+    end
+    %Create desktops
     i = 1;
     while i <= 10
         desktop(i).object = zeros(60,120)+1;
@@ -55,20 +87,6 @@ function room = createWorkspace(width, height)
             i = i + 1;
         end
     end
-    assignin('base','desktop',desktop);
-    %Create chairs
-    i = 1;
-    while i <= 20
-        chair(i).object = zeros(50,50)+1;
-        [chair(i).height, chair(i).width] = size(chair(i).object);
-        candidateX = randi(room.width-chair(i).width);
-        candidateY = randi(room.height-chair(i).height);
-        if candidateX > doorW || candidateY > doorH
-            room.area(candidateY:candidateY+chair(i).height-1,candidateX:candidateX+chair(i).width-1) = chair(i).object;
-            i = i + 1;
-        end
-    end
-    assignin('base','chair',chair);
 end
  
 function robot = createRobot(width, height)
@@ -87,6 +105,8 @@ function robot = createRobot(width, height)
     %By defalut it initiates in position (1,1) of workspace
     robot.x = 1; 
     robot.y = 1;
+	robot.theta = 0;
+	robot.rho = 1;
 end
  
 function [room,ret] = moveRobot(room,roomWithoutBot,bot,newX,newY)
@@ -103,7 +123,6 @@ function [room,ret] = moveRobot(room,roomWithoutBot,bot,newX,newY)
         room = roomWithoutBot; %Clean the room to draw the robot in a new position
         bot.x = newX;
         bot.y = newY;
-        assignin('base','bot',bot);
         room.area(bot.y:bot.y+bot.height-1,bot.x:bot.x+bot.width-1) = bot.object;
     
         newSumRoom = sum(sum(room.area));
@@ -121,8 +140,16 @@ function [room,ret] = moveRobot(room,roomWithoutBot,bot,newX,newY)
     
 end
  
-function [] = configSimulation()
+function [dirX,dirY] = changeMovement(bot)
+	bot.theta = bot.theta + pi/randi(2:6);
+    [dirX, dirY] = pol2cart(bot.theta,bot.rho);
+	dirX = int16(dirX);
+	dirY = int16(dirY);
+end
+
+function [] = configSimulation(room)
     figure(1)
     colormap(flipud(gray))
     grid on
+    pbaspect([room.width room.height 1]);
 end
