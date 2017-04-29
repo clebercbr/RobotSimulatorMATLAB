@@ -32,7 +32,7 @@ function [] = simulation()
 		heatmap = ws_updateHeatmap(heatmap,bot);
 	    assignin('base','heatmap',heatmap);
 	    pbaspect([room.width room.height 1]);
-		imagesc(room.area)
+		imagesc(room.area);
 		pause(Tsimu);
 	end
 
@@ -51,9 +51,9 @@ function room = ws_createWorkspace(width, height)
 	roomWithDesktops.area = room.area;
     %Create chairs
     i = 1;
-    while i <= 20
+    while i <= 15
 		roomTemp.area = room.area;
-        chair(i).object = zeros(44,44)+1;
+        chair(i).object = zeros(44,44)+0.6;
         [chair(i).height, chair(i).width] = size(chair(i).object);
         candidateX = randi(room.width-chair(i).width);
         candidateY = randi(room.height-chair(i).height);
@@ -61,21 +61,37 @@ function room = ws_createWorkspace(width, height)
 		%Make sure the object is not going to be put on the door or over another chair
         if (candidateX > doorW || candidateY > doorH) && (sum(sum(roomTemp.area))==sum(sum(room.area))+sum(sum(chair(i).object)))
 	        chair(i).object(1:end,1:end) = 0;
-			chair(i).object(1:5,1:5) = 1;	
-			chair(i).object(end-4:end,1:5) = 1;
-			chair(i).object(1:5,end-4:end) = 1;
-			chair(i).object(end-4:end,end-4:end) = 1;
+			chair(i).object(1:5,1:5) = 0.6;	
+			chair(i).object(end-4:end,1:5) = 0.6;
+			chair(i).object(1:5,end-4:end) = 0.6;
+			chair(i).object(end-4:end,end-4:end) = 0.6;
 
             room.area(candidateY:candidateY+chair(i).height-1,candidateX:candidateX+chair(i).width-1) = chair(i).object;
             i = i + 1;
         end
     end
+    %Create ground obstacles
+    i = 1;
+    while i <= 5
+		roomTemp.area = room.area;
+        obstable(i).object = zeros(50,40)+0.4;
+        [obstable(i).height, obstable(i).width] = size(obstable(i).object);
+        candidateX = randi(room.width-obstable(i).width);
+        candidateY = randi(room.height-obstable(i).height);
+		roomTemp.area(candidateY:candidateY+obstable(i).height-1,candidateX:candidateX+obstable(i).width-1) = obstable(i).object;
+		%Make sure the object is not going to be put on the door or over another chair
+        if (candidateX > doorW || candidateY > doorH) && (sum(sum(roomTemp.area))==sum(sum(room.area))+sum(sum(obstable(i).object)))
+            room.area(candidateY:candidateY+obstable(i).height-1,candidateX:candidateX+obstable(i).width-1) = obstable(i).object;
+            i = i + 1;
+        end
+    end
+
     %Create desktops
     i = 1;
     while i <= 10
 		 %In this case a desktop over a chair is ok
 		roomTemp.area = roomWithDesktops.area;
-        desktop(i).object = zeros(60,120)+1;
+        desktop(i).object = zeros(60,120)+0.8;
         [desktop(i).height,desktop(i).width] = size(desktop(i).object);
         candidateX = randi(room.width-desktop(i).width);
         candidateY = randi(room.height-desktop(i).height);
