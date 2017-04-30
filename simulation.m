@@ -22,13 +22,14 @@ function [] = simulation()
     botNewX = bot.x;
     botNewY = bot.y;
 	counter = 0;
+	movement = 'S';
 	disp('Robot placed in first position!');
 
     while 1
         botNewX = botNewX+dirX;
         botNewY = botNewY+dirY;
         [room,bot,hadCollision] = ws_changeBotPosition(room,roomWithoutBot,bot,botNewX,botNewY); 
-		[dirX,dirY,bot,counter] = bot_nextPosition(bot,hadCollision,counter);
+		[dirX,dirY,bot,counter] = bot_nextPosition(bot,hadCollision,movement,counter);
 		heatmap = ws_updateHeatmap(heatmap,bot);
 	    assignin('base','heatmap',heatmap);
 	    pbaspect([room.width room.height 1]);
@@ -154,23 +155,59 @@ function [room,bot,collision] = ws_changeBotPosition(room,roomWithoutBot,bot,new
     end
 end
  
-function [retX,retY,bot,counter] = bot_nextPosition(bot,hadCollision,counter)
+function [retX,retY,bot,counter,movement] = bot_nextPosition(bot,hadCollision,movement,counter)
 %How to do it????
 %	if ~exist('counter')
 %		counter = 0
 %	end	
-	if (hadCollision == 0) && (counter < 50)
-    	[retX, retY] = pol2cart(bot.theta,bot.rho);
-		retX = int16(retX);
-		retY = int16(retY);
-		counter = counter + 1;
-	else
-		bot.theta = bot.theta + pi/randi(2:6);
-    	[retX, retY] = pol2cart(bot.theta,bot.rho);
+	switch (movement)
+	case 'R' %Rounding
+		title = 'R'
+		if (hadCollision == 0) && (counter < 50)
+			bot.theta = bot.theta + pi/48;
+    		[retX, retY] = pol2cart(bot.theta,bot.rho);
+			retX = int16(retX);
+			retY = int16(retY);
+			counter = counter + 1;
+		else
+			[bot,movement] = bot_changeMovement(bot,movement);
+			%bot.theta = bot.theta + pi/randi(2:6);
+    		[retX, retY] = pol2cart(bot.theta,bot.rho);
+			retX = int16(retX);
+			retY = int16(retY);
+			counter = 0;
+		end
+	case 'S' %Go straight
+		title = 'S'
+		if (hadCollision == 0) && (counter < 50)
+    		[retX, retY] = pol2cart(bot.theta,bot.rho);
+			retX = int16(retX);
+			retY = int16(retY);
+			counter = counter + 1;
+		else
+			[bot,movement] = bot_changeMovement(bot,movement);
+			%bot.theta = bot.theta + pi/randi(2:6);
+    		[retX, retY] = pol2cart(bot.theta,bot.rho);
+			retX = int16(retX);
+			retY = int16(retY);
+			counter = 0;
+		end
+	otherwise % unexpected situation
+		movement = 'R';
+		[bot,movement] = bot_changeMovement(bot,movement);
+		%bot.theta = bot.theta + pi/randi(2:6);
+   		[retX, retY] = pol2cart(bot.theta,bot.rho);
 		retX = int16(retX);
 		retY = int16(retY);
 		counter = 0;
 	end
+end
+
+function [bot,movement] = bot_changeMovement(bot,movement)
+	bot.theta = bot.theta + pi/randi(2:6);
+	%moves = ['S','R'];
+	%movement = moves(randi(numel(moves)));
+	movement = 'R';
 end
 
 function [] = ws_configSimulation(room)
