@@ -112,7 +112,7 @@ function room = ws_createWorkspace(width, height)
 end
  
 function robot = ws_createRobot(width, height)
-    
+    %{
     robot.object = zeros(width,height);
     for i = -width/2:width/2
         for j = -height/2:height/2
@@ -122,15 +122,14 @@ function robot = ws_createRobot(width, height)
 	    	end
         end
     end
+    %}
     
-    %{
     [x1, y1] = meshgrid(-width/2:width/2-1);
     robot.object = double(x1.^2 + y1.^2 <= (width/2)^2);
     
     imagesc(robot.object);
     pause
-	%}    
-
+    
     robot.width = width;
     robot.height = height;
     %By default it initiates in position (1,1) of workspace with 0 rad in angle
