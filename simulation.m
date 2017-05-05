@@ -124,8 +124,8 @@ function robot = ws_createRobot(width, height)
     end
     
     %{
-    [x1, y1] = meshgrid(-width/2:width/2-1);
-    robot.object = double(x1.^2 + y1.^2 <= (width/2)^2);
+    [X, Y] = meshgrid(-(width/2-1):width/2);
+    robot.object = double(X.^2 + Y.^2 <= (width/2-1)^2);
     
     imagesc(robot.object);
     pause
